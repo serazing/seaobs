@@ -1,0 +1,20 @@
+.cache/
+.idea/
+build/
+dist/
+*.log
+.coverage
+
+*.swp
+
+# Documentation
+docs/_build
+docs/generated
+docs/*.png
+docs/savefig/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+seaobs.egg-info/
