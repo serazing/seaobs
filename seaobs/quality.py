@@ -3,7 +3,9 @@ from __future__ import absolute_import, division, print_function
 import xarray as xr
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from . import geometry as geom
+import cartopy.crs as ccrs
 
 def get_adcp_segments(ds, min_uship=3., max_heading_rate=5, poly=None,
                       attrs={}):
@@ -44,7 +46,7 @@ def get_adcp_segments(ds, min_uship=3., max_heading_rate=5, poly=None,
 	ds = ds.where((heading_rate < max_heading_rate) & cond_velocity &
 	              cond_region)
 	# Useful numpy.ma function to get the slices corresponding to unmasked data
-	slices = np.ma.clump_unmasked(np.ma.masked_invalid(ds.isel(depth=0).u.data))
+	slices = np.ma.clump_unmasked(np.ma.masked_invalid(ds['uship'].data))
 	segment_counter = 1
 	for sl in slices:
 		seg = ds.isel(time=sl)
@@ -175,3 +177,23 @@ def get_valid_segments(segments, min_length=50, min_observations=20):
 	return valid_segments
 
 
+def plot_segments(raw_data=None, segments=None, mission_name='',  poly=None,
+                  lat_min=-90, lat_max=90, lon_min=0, lon_max=360):
+    """
+    Plot ADCP transects from regions of intres
+    """
+    ax = geom.add_map(lat_min=lat_min, lat_max=lat_max, lon_min=lon_min,
+                       lon_max=lon_max)
+    if raw_data is not None:
+        ax.plot(raw_data.lon, raw_data.lat, '--', label='Raw data', lw=1)
+    section_nb = 1
+    if segments is not None:
+	    for ds in segments:
+	        ax.plot(ds.lon, ds.lat, '.',
+	                label='Segment %s' % section_nb, markersize=2)
+	        section_nb +=1
+    if poly is not None:
+        ax.add_geometries(poly, ccrs.PlateCarree(), alpha=0.2)
+    plt.title(mission_name)
+    plt.legend()
+    plt.tight_layout()

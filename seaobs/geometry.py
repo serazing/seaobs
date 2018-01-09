@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 EARTH_RADIUS = 6371 * 1000
 
@@ -133,7 +137,7 @@ def latlon2vu(lat, lon, dim):
 	u : xarray.DataArray
 		The zonal velocity
 	"""
-	dy, dx = latlon2dydx(lat, lon)
+	dy, dx = latlon2dydx(lat, lon, dim=dim)
 	dt = pd.to_numeric(lat[dim].diff(dim=dim)) * 1e-9
 	v, u = dx / dt, dy / dt
 	return v, u
@@ -190,3 +194,49 @@ def inpolygon(data, poly):
     mask = inpolygon(poly, lon.data.ravel(), lat.data.ravel())
     da_mask = xr.DataArray(mask, dims=lon.dims, coords=lon.coords)
     return da_mask
+
+
+def add_map(lon_min=0, lon_max=360, lat_min=-90, lat_max=90,
+            central_longitude=180., scale='auto', ax=None):
+    """
+    Add the map to the existing plot using cartopy
+
+    Parameterss
+    ----------
+    lon_min : float, optional
+        Western boundary, default is -180
+    lon_max : float, optional
+        Eastern boundary, default is 180
+    lat_min : float, optional
+        Southern boundary, default is -90
+    lat_max : float, optional
+        Northern boundary, default is 90
+    central_longitude : float, optional
+        Central longitude, default is 180
+    scale : {‘auto’, ‘coarse’, ‘low’, ‘intermediate’, ‘high, ‘full’}, optional
+        The map scale, default is 'auto'
+    ax : GeoAxes, optional
+        A new GeoAxes will be created if None
+
+    Returns
+    -------
+    ax : GeoAxes
+    Return the current GeoAxes instance
+    """
+    extent = (lon_min, lon_max, lat_min, lat_max)
+    if ax is None:
+        ax = plt.subplot(1, 1, 1,
+                         projection=ccrs.PlateCarree(
+	                                       central_longitude=central_longitude))
+    ax.set_extent(extent)
+    land = cfeature.GSHHSFeature(scale=scale,
+                                 levels=[1],
+                                 facecolor=cfeature.COLORS['land'])
+    ax.add_feature(land)
+    gl = ax.gridlines(draw_labels=True, linestyle=':', color='black',
+                      alpha=0.5)
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    return ax
