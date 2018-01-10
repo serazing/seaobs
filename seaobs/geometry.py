@@ -196,8 +196,8 @@ def inpolygon(data, poly):
     return da_mask
 
 
-def add_map(lon_min=0, lon_max=360, lat_min=-90, lat_max=90,
-            central_longitude=180., scale='auto', ax=None):
+def add_map(lon_min=-180, lon_max=180, lat_min=-90, lat_max=90,
+            central_longitude=0., scale='auto', ax=None):
     """
     Add the map to the existing plot using cartopy
 

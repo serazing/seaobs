@@ -6,9 +6,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from . import geometry as geom
 import cartopy.crs as ccrs
+import os
 
-def get_adcp_segments(ds, min_uship=3., max_heading_rate=5, poly=None,
-                      attrs={}):
+def get_segments(ds, min_uship=3., max_heading_rate=5, poly=None, attrs={}):
 	"""
 	Make a list of segments from an ADCP dataset to consider only portions
 	where the ship meet velocity and heading rates requirements
@@ -85,13 +85,14 @@ def _compute_heading_difference_between_segments(segments):
 	`heading_difference_with_previous_segment`
 	"""
 	heading_difference = []
-	previous_segment_heading = segments[0].isel(depth=0)['heading'].mean()
+	previous_segment_heading = segments[0]['heading'].mean()
 	for seg in segments:
-		segment_heading = seg.isel(depth=0)['heading'].mean()
+		segment_heading = seg['heading'].mean()
 		delta_heading = abs(previous_segment_heading - segment_heading)
 		heading_difference.append(delta_heading.data)
 		previous_segment_heading = segment_heading
 	return heading_difference
+
 
 def concatenate_segments(segments, max_break='30m', max_heading_rate=5):
 	"""
@@ -171,19 +172,18 @@ def get_valid_segments(segments, min_length=50, min_observations=20):
 	"""
 	valid_segments = []
 	for seg in segments:
-		if get_segment_length(seg.isel(depth=0)) >= min_length and seg.sizes[
-			'time'] >= min_observations:
+		if (get_segment_length(seg) >= min_length and
+			seg.sizes['time'] >= min_observations):
 			valid_segments.append(seg)
 	return valid_segments
 
 
 def plot_segments(raw_data=None, segments=None, mission_name='',  poly=None,
-                  lat_min=-90, lat_max=90, lon_min=0, lon_max=360):
+                  **kwargs):
     """
     Plot ADCP transects from regions of intres
     """
-    ax = geom.add_map(lat_min=lat_min, lat_max=lat_max, lon_min=lon_min,
-                       lon_max=lon_max)
+    ax = geom.add_map(**kwargs)
     if raw_data is not None:
         ax.plot(raw_data.lon, raw_data.lat, '--', label='Raw data', lw=1)
     section_nb = 1
@@ -197,3 +197,12 @@ def plot_segments(raw_data=None, segments=None, mission_name='',  poly=None,
     plt.title(mission_name)
     plt.legend()
     plt.tight_layout()
+
+
+def save_segments_to_netcdf(segments, output_path, mission_name=''):
+    full_output_path = output_path + mission_name + '/'
+    if not os.path.isdir(full_output_path):
+        os.makedirs(full_output_path)
+    output_filenames = [full_output_path + mission_name +
+                        '_segment_%02d.nc' % (ns + 1)  for ns in range(len(segments))]
+    xr.save_mfdataset(segments, output_filenames)
