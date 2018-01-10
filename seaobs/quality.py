@@ -206,3 +206,9 @@ def save_segments_to_netcdf(segments, output_path, mission_name=''):
     output_filenames = [full_output_path + mission_name +
                         '_segment_%02d.nc' % (ns + 1)  for ns in range(len(segments))]
     xr.save_mfdataset(segments, output_filenames)
+
+
+def open_segments_from_netcdf(input_path):
+    import glob
+    list_of_path = sorted(glob.glob(input_path + "*/*_segment_*.nc"))
+    return [xr.open_dataset(path, autoclose=True) for path in list_of_path]
