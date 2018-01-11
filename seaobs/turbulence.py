@@ -81,7 +81,7 @@ def strfunc(data, dim, max_lag, vars=None, order=2, r_bins=None):
 	return output
 
 
-def avg_strfunc(dn, r_bins):
+def avg_strfunc(dn, r_bins, mode='mean'):
 	"""
 	Average the structure functions over different bins using
 	:py:func:`xarray.Dataset.groupby_bins`
@@ -93,6 +93,9 @@ def avg_strfunc(dn, r_bins):
 	r_bins :  int or array of scalars
 		The list of bins over which the structure functions are averaged (see
 		:py:func:`xarray.Dataset.groupby_bins`)
+	mode : {'mean', 'median'}, optional
+		Define if the averaged is performed by using the mean (default) or
+		the median
 
 	Returns
 	-------
@@ -100,7 +103,13 @@ def avg_strfunc(dn, r_bins):
 		The structure functions averaged
 	"""
 	r_labels = r_bins[1:] - np.diff(r_bins) / 2
-	return dn.groupby_bins('r', r_bins, labels=r_labels).mean(dim='r')
+	if mode is 'mean':
+		avg_dn = dn.groupby_bins('r', r_bins, labels=r_labels).mean(dim='r')
+	elif mode is 'median':
+		avg_dn = dn.groupby_bins('r', r_bins, labels=r_labels).median(dim='r')
+	else:
+		raise(ValueError, "This mode is not available.")
+	return avg_dn
 
 
 def helmdec_on_strfunc(d2, ul='u', ut='v'):
